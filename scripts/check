@@ -37,6 +37,10 @@ if [ "${no_ssl}" == 'true' ]; then
     protocol='http'
 fi
 
+if [ "${preoject_id}" == [0-9]* ]; then
+    project_path=${preoject_id}
+fi
+
 version_updated_at=0
 if [ ! -z "${version_sha}" ]; then
     version_updated_at="$(curl -s -H "private-token: ${private_token}" "${protocol}://${gitlab_host}/api/v4/projects/$(urlencode "${project_path}")/repository/commits/${version_sha}" \
