@@ -9,16 +9,20 @@ exec 1>&2 # redirect all output to stderr for logging
 TMPDIR=${TMPDIR:-/tmp}
 
 source "$(dirname "$0")/common.sh"
+sh "$(dirname "$0")/ext.sh"
 
 payload="$(mktemp "${TMPDIR}/gitlab-merge-request-resource.XXXXXX")"
 
 cat > "${payload}" <&0
+
+debug="true"
 
 configure_ssl_verification "${payload}"
 
 uri="$(jq -r '.source.uri // ""' < "${payload}")"
 private_token="$(jq -r '.source.private_token // ""' < "${payload}")"
 no_ssl="$(jq -r '.source.no_ssl // ""' < "${payload}")"
+project_id="$(jq -r '.source.project_id // ""' < "${payload}")"
 version_sha="$(jq -r '.version.sha // ""' < "${payload}")"
 
 if [[ "${uri}" == *"git@"* ]]; then
@@ -37,8 +41,8 @@ if [ "${no_ssl}" == 'true' ]; then
     protocol='http'
 fi
 
-if [ "${preoject_id}" == [0-9]* ]; then
-    project_path=${preoject_id}
+if [ "${project_id}" == [0-9]* ]; then
+    project_path=${project_id}
 fi
 
 version_updated_at=0
@@ -49,6 +53,11 @@ fi
 
 open_mrs="$(curl -s -H "private-token: ${private_token}" "${protocol}://${gitlab_host}/api/v4/projects/$(urlencode "${project_path}")/merge_requests?state=opened&order_by=updated_at")"
 num_mrs="$(echo "${open_mrs}" | jq 'length')"
+
+if [ $debug == 'true' ]; then
+    echo "open_mrs"
+    echo "curl -s -H "private-token: ${private_token}" "${protocol}://${gitlab_host}/api/v4/projects/$(urlencode "${project_path}")/merge_requests?state=opened&order_by=updated_at""
+fi
 
 new_versions=''
 
@@ -64,11 +73,20 @@ for i in $(seq 0 $((num_mrs - 1))); do
     fi
 done
 
+if [ $debug == 'true' ]; then
+    echo "mr_updated_at"
+    echo "curl -s -H "private-token: ${private_token}" "${protocol}://${gitlab_host}/api/v4/projects/$(urlencode "${project_path}")/repository/commits/${mr_sha}""
+fi
 new_versions="${new_versions#','}" # remove trailing comma
 new_versions="[${new_versions}]" # make JSON array
 
 if [ "${new_versions}" == '[]' ] && ! [ -z "${version_sha}" ]; then
     new_versions="[{\"sha\":\"${version_sha}\"}]"
+fi
+
+if [ $debug == 'true' ]; then
+    echo "new versions"
+    echo "${new_versions}"
 fi
 
 jq -n "${new_versions}" >&3

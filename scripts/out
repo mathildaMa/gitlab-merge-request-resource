@@ -43,6 +43,7 @@ fi
 
 gitlab_host=''
 project_path=''
+project_id=''
 protocol='https'
 if [[ ! -z "${private_key}" ]]; then
     gitlab_host="$(echo "${uri}" | sed -rn 's/.*git@(.*):([0-9]*\/+)?(.*)\.git/\1/p')"
@@ -56,6 +57,10 @@ else
 fi
 if [ "${no_ssl}" == 'true' ]; then
     protocol='http'
+fi
+
+if [ "${project_id}" == [0-9]* ]; then
+    project_path=${project_id}
 fi
 
 target_url="${ATC_EXTERNAL_URL}/teams/$(urlencode "${BUILD_TEAM_NAME}")/pipelines/$(urlencode "${BUILD_PIPELINE_NAME}")/jobs/$(urlencode "${BUILD_JOB_NAME}")/builds/$(urlencode "${BUILD_NAME}")"

@@ -19,6 +19,7 @@ resources:
     private_token: XXX
     username: my_username
     password: xxx
+    project_id: project_path
 ```
 
 * `uri`: The location of the repository (required)
